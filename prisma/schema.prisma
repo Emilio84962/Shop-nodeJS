@@ -1,14 +1,159 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "mysql"
 }
+
+/// Tabla de usuarios
+model User {
+  id          BigInt    @id @default(autoincrement())
+  email       String    @unique @db.VarChar(200)
+  password    String    @db.VarChar(200)
+  status      Int       @default(1) @db.TinyInt
+  created_at  DateTime  @default(now()) @db.DateTime(6)
+  updated_at  DateTime  @updatedAt @db.DateTime(6)
+  deleted_at  DateTime? @db.DateTime(6)
+
+  orders      Order[]
+  products    Product[]
+  profile     Profile?
+
+  @@map("users")
+}
+
+model Profile {
+  id          BigInt    @id @default(autoincrement())
+  user_id     BigInt    @unique
+  bio         String?   @db.Text
+  phone       String?   @db.VarChar(50)
+  status      Int       @default(1) @db.TinyInt
+  created_at  DateTime  @default(now()) @db.DateTime(6)
+  updated_at  DateTime  @updatedAt @db.DateTime(6)
+  deleted_at  DateTime? @db.DateTime(6)
+
+  user        User      @relation(fields: [user_id], references: [id])
+
+  @@map("profiles")
+}
+
+/// Categorías
+model Category {
+  id          BigInt    @id @default(autoincrement())
+  name        String    @db.VarChar(150)
+  description String?   @db.Text
+  status      Int       @default(1) @db.TinyInt
+  created_at  DateTime  @default(now()) @db.DateTime(6)
+  updated_at  DateTime  @updatedAt @db.DateTime(6)
+  deleted_at  DateTime? @db.DateTime(6)
+
+  products    Product[]
+
+  @@map("categories")
+}
+
+/// Productos
+model Product {
+  id            BigInt       @id @default(autoincrement())
+  sku           String       @unique @db.VarChar(100)
+  name          String       @db.VarChar(200)
+  description   String?      @db.Text
+  price         Float
+  stock         Int
+  is_digital    Boolean      @default(false)
+  status        Int          @default(1) @db.TinyInt
+  created_at    DateTime     @default(now()) @db.DateTime(6)
+  updated_at    DateTime     @updatedAt @db.DateTime(6)
+  deleted_at    DateTime?    @db.DateTime(6)
+
+  category_id   BigInt?
+  user_id       BigInt?
+  order_items   OrderItem[]
+  product_tags  ProductTag[]
+
+  Category      Category?    @relation(fields: [category_id], references: [id])
+  user          User?        @relation(fields: [user_id], references: [id])
+
+  @@index([category_id], map: "products_category_id_fkey")
+  @@index([user_id], map: "products_owner_id_fkey")
+  @@map("products")
+}
+
+/// Tags
+model Tag {
+  id          BigInt    @id @default(autoincrement())
+  name        String    @db.VarChar(100)
+  status      Int       @default(1) @db.TinyInt
+  created_at  DateTime  @default(now()) @db.DateTime(6)
+  updated_at  DateTime  @updatedAt @db.DateTime(6)
+  deleted_at  DateTime? @db.DateTime(6)
+
+  product_tags ProductTag[]
+
+  @@map("tags")
+}
+
+/// ProductTags
+model ProductTag {
+  id          BigInt    @id @default(autoincrement())
+  product_id  BigInt
+  tag_id      BigInt
+  status      Int       @default(1) @db.TinyInt
+  created_at  DateTime  @default(now()) @db.DateTime(6)
+  updated_at  DateTime  @updatedAt @db.DateTime(6)
+  deleted_at  DateTime? @db.DateTime(6)
+
+  product     Product   @relation(fields: [product_id], references: [id])
+  tag         Tag       @relation(fields: [tag_id], references: [id])
+
+  @@unique([product_id, tag_id])
+  @@index([tag_id], map: "product_tag_tag_id_fkey")
+  @@map("product_tags")
+}
+
+/// Orders
+model Order {
+  id          BigInt     @id @default(autoincrement())
+  user_id     BigInt
+  total       Float
+  status      Int        @default(1) @db.TinyInt
+  created_at  DateTime   @default(now()) @db.DateTime(6)
+  updated_at  DateTime   @updatedAt @db.DateTime(6)
+  deleted_at  DateTime?  @db.DateTime(6)
+
+  items       OrderItem[]
+  user        User       @relation(fields: [user_id], references: [id])
+
+  @@index([user_id], map: "orders_user_id_fkey")
+  @@map("orders")
+}
+
+/// OrderItems
+model OrderItem {
+  id          BigInt     @id @default(autoincrement())
+  order_id    BigInt
+  product_id  BigInt
+  quantity    Int
+  price       Float
+  status      Int        @default(1) @db.TinyInt
+  created_at  DateTime   @default(now()) @db.DateTime(6)
+  updated_at  DateTime   @updatedAt @db.DateTime(6)
+  deleted_at  DateTime?  @db.DateTime(6)
+
+  order       Order      @relation(fields: [order_id], references: [id])
+  product     Product    @relation(fields: [product_id], references: [id])
+
+  @@index([order_id], map: "order_items_order_id_fkey")
+  @@index([product_id], map: "order_items_product_id_fkey")
+  @@map("order_items")
+}
+
+
+
+
+
